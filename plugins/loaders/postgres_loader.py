@@ -39,34 +39,42 @@ class PostgresLoader:
         )
         
         logger.info(f"Loaded {len(df)} records into {table_name}")
-    
+
     def upsert(self, df: pd.DataFrame, table_name: str):
         """Upsert records to avoid duplicates."""
+        from sqlalchemy import text
+        
         temp_table = f"temp_{table_name}"
         
-        # Load to temp table first
+        # Charge dans la table temporaire
         self.load(df, temp_table, if_exists='replace')
         
-        # Upsert from temp to main table
-        upsert_sql = f"""
-            INSERT INTO {table_name}
-            SELECT * FROM {temp_table}
+        # Upsert en excluant la colonne id (auto-générée par SERIAL)
+        # On liste explicitement les colonnes du DataFrame seulement
+        df_columns = ", ".join(df.columns.tolist())
+        
+        excluded_updates = ", ".join([
+            f"{col} = EXCLUDED.{col}" 
+            for col in df.columns 
+            if col not in ('country_code', 'year')
+        ])
+        
+        upsert_sql = text(f"""
+            INSERT INTO {table_name} ({df_columns})
+            SELECT {df_columns}
+            FROM {temp_table}
             ON CONFLICT (country_code, year)
-            DO UPDATE SET
-                gdp_current_usd = EXCLUDED.gdp_current_usd,
-                population_total = EXCLUDED.population_total,
-                inflation_rate = EXCLUDED.inflation_rate,
-                unemployment_rate = EXCLUDED.unemployment_rate,
-                internet_users_percent = EXCLUDED.internet_users_percent,
-                gdp_per_capita = EXCLUDED.gdp_per_capita,
-                economic_health_score = EXCLUDED.economic_health_score,
-                ingestion_timestamp = EXCLUDED.ingestion_timestamp;
-            
-            DROP TABLE {temp_table};
-        """
+            DO UPDATE SET {excluded_updates}
+        """)
+        
+        drop_sql = text(f"DROP TABLE IF EXISTS {temp_table}")
         
         with self.engine.connect() as conn:
             conn.execute(upsert_sql)
+            conn.execute(drop_sql)
             conn.commit()
         
         logger.info(f"Upserted {len(df)} records into {table_name}")
+
+
+
