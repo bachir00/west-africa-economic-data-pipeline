@@ -18,7 +18,7 @@ A production-grade ETL (Extract, Transform, Load) platform that automates the co
 - [Future Enhancements](#-future-enhancements)
 - [Contributing](#-contributing)
 - [License](#-license)
-- [Author](#️-author)
+- [Authors](#️-authors)
 - [Acknowledgments](#-acknowledgments)
 
 ## 📊 Overview
@@ -495,7 +495,7 @@ Contributions are welcome! Please follow these steps:
 
 This project is licensed under the MIT License. You are free to use this project for personal, commercial, or educational purposes.
 
-## 👨‍💼 Author
+## 👨‍💼 Authors
 
 **Bachir** - Data Engineer  
 - 🔗 GitHub: [github.com/bachir00](https://github.com/bachir00)
