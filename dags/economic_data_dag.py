@@ -18,11 +18,19 @@ from loaders.postgres_loader import PostgresLoader
 logger = logging.getLogger(__name__)
 
 # Config
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', '')
+AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
 S3_BUCKET = os.getenv('S3_BUCKET', 'west-africa-economic-data')
-# POSTGRES_CONN = os.getenv('POSTGRES_CONN','')
-POSTGRES_CONN="postgresql+psycopg2://airflow:airflow@postgres:5432/west_africa_economic_data"
+POSTGRES_CONN = os.getenv("POSTGRES_CONN", "")
 
-# Debug: Vérifier que POSTGRES_CONN est défini
+# Debug: Check AWS credentials
+if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
+    logger.warning("⚠️ AWS credentials not found. S3 loading will be skipped or use IAM role credentials.")
+else:
+    logger.info(f"✅ AWS credentials configured for region: {AWS_REGION}")
+
+# Debug: Check POSTGRES_CONN
 if not POSTGRES_CONN:
     logger.warning("⚠️ POSTGRES_CONN is empty! Check docker-compose environment variables")
 else:
@@ -93,8 +101,10 @@ def transform(**context):
 
 
 def load_to_s3(**context):
-    """Load data to AWS S3."""
+    """Load data to AWS S3 data lake."""
     import pandas as pd
+    
+    logger.info("📤 Starting S3 upload...")
     
     raw_json = context['ti'].xcom_pull(key='raw_data', task_ids='extract')
     transformed_json = context['ti'].xcom_pull(
@@ -105,13 +115,32 @@ def load_to_s3(**context):
     raw_df = pd.read_json(raw_json)
     transformed_df = pd.read_json(transformed_json)
     
-    loader = S3Loader(bucket_name=S3_BUCKET)
-    
-    raw_path = loader.upload_raw(raw_df)
-    processed_path = loader.upload_processed(transformed_df)
-    
-    logger.info(f"S3 upload complete: {raw_path} | {processed_path}")
-    return processed_path
+    try:
+        loader = S3Loader(
+            bucket_name=S3_BUCKET,
+            region_name=AWS_REGION,
+            access_key_id=AWS_ACCESS_KEY_ID if AWS_ACCESS_KEY_ID else None,
+            secret_access_key=AWS_SECRET_ACCESS_KEY if AWS_SECRET_ACCESS_KEY else None
+        )
+        
+        # Upload raw data
+        raw_path = loader.upload_raw(raw_df, format='csv')
+        logger.info(f"✅ Raw data uploaded: {raw_path}")
+        
+        # Upload processed data
+        processed_path = loader.upload_processed(transformed_df, format='parquet')
+        logger.info(f"✅ Processed data uploaded: {processed_path}")
+        
+        # Push paths to XCom for validation
+        context['ti'].xcom_push(key='s3_raw_path', value=raw_path)
+        context['ti'].xcom_push(key='s3_processed_path', value=processed_path)
+        
+        logger.info(f"✅ S3 upload complete")
+        return processed_path
+        
+    except Exception as e:
+        logger.error(f"❌ S3 upload failed: {str(e)}")
+        raise
 
 
 def load_to_postgres(**context):
@@ -197,11 +226,11 @@ t_transform = PythonOperator(
     dag=dag,
 )
 
-# t_load_s3 = PythonOperator(
-#     task_id='load_to_s3',
-#     python_callable=load_to_s3,
-#     dag=dag,
-# )
+t_load_s3 = PythonOperator(
+    task_id='load_to_s3',
+    python_callable=load_to_s3,
+    dag=dag,
+)
 
 t_load_postgres = PythonOperator(
     task_id='load_to_postgres',
@@ -215,6 +244,5 @@ t_validate = PythonOperator(
     dag=dag,
 )
 
-# Pipeline flow
-# t_extract >> t_transform >> [t_load_s3, t_load_postgres] >> t_validate
-t_extract >> t_transform >> [ t_load_postgres] >> t_validate
+# Pipeline flow: Extract → Transform → [Load to S3 + Load to PostgreSQL] → Validate
+t_extract >> t_transform >> [t_load_s3, t_load_postgres] >> t_validate

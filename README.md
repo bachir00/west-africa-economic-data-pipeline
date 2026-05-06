@@ -3,23 +3,25 @@
 A production-grade ETL (Extract, Transform, Load) platform that automates the collection, processing, and warehousing of key economic indicators for 10 West African countries. Built with Apache Airflow, PostgreSQL, and AWS S3, this pipeline demonstrates enterprise-level data engineering practices including orchestration, error handling, data validation, and automated monitoring.
 
 ## 📋 Table of Contents
-- [Overview](#-overview)
-- [Architecture](#️-architecture)
-- [Tech Stack](#️-tech-stack)
-- [Features](#-features)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [Data Schema](#-data-schema)
-- [Project Structure](#-project-structure)
-- [Pipeline Workflows](#-pipeline-workflows)
-- [Performance & Optimization](#-performance--optimization)
-- [Error Handling & Monitoring](#️-error-handling--monitoring)
-- [Testing](#-testing)
-- [Future Enhancements](#-future-enhancements)
-- [Contributing](#-contributing)
-- [License](#-license)
-- [Author](#️-author)
-- [Acknowledgments](#-acknowledgments)
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Features](#features)
+- [Installation](#installation)
+- [AWS S3 Setup](#step-5-configure-aws-s3-optional)
+- [Usage](#usage)
+- [Data Schema](#data-schema)
+- [S3 Data Lake](#-aws-s3-data-lake)
+- [Project Structure](#project-structure)
+- [Pipeline Workflows](#pipeline-workflows)
+- [Performance & Optimization](#performance--optimization)
+- [Error Handling & Monitoring](#error-handling--monitoring)
+- [Testing](#testing)
+- [Future Enhancements](#future-enhancements)
+- [Contributing](#contributing)
+- [License](#license)
+- [Author](#author)
+- [Acknowledgments](#acknowledgments)
 
 ## 📊 Overview
 
@@ -148,6 +150,13 @@ This project ingests economic data from the **World Bank API** for 10 West Afric
 - SQL migration scripts
 - Python dependency pinning (requirements.txt)
 
+✅ **Data Lake with AWS S3** 
+- Dual-destination architecture: PostgreSQL + S3
+- Raw layer (CSV): full data provenance
+- Processed layer (Parquet): optimized for analytics
+- Temporal partitioning (YYYY/MM/DD/HHMMSS) for efficient querying
+- Queryable via AWS Athena SQL
+
 ## 🚀 Installation
 
 ### Prerequisites
@@ -196,6 +205,27 @@ docker-compose ps
 - **URL**: http://localhost:8080
 - **Username**: admin
 - **Password**: admin
+
+### Step 5: Configure AWS S3 (Optional)
+
+To enable data lake storage in AWS S3:
+
+1. **Create AWS Account & S3 Bucket** - Follow [AWS_SETUP.md](AWS_SETUP.md) for complete guide
+2. **Get IAM Credentials** - Create access keys for Airflow
+3. **Update .env file:**
+   ```bash
+   AWS_ACCESS_KEY_ID=your_access_key
+   AWS_SECRET_ACCESS_KEY=your_secret_key
+   AWS_DEFAULT_REGION=us-east-1
+   S3_BUCKET=west-africa-economic-data
+   ```
+4. **Restart Docker:**
+   ```bash
+   docker-compose down
+   docker-compose up -d
+   ```
+
+For detailed AWS setup instructions, see [AWS_SETUP.md](AWS_SETUP.md) →
 
 ## 📖 Usage
 
@@ -266,6 +296,37 @@ FROM west_africa_economic_data;
 
 **Unique Constraint**: `(country_code, year)` - prevents duplicate country-year combinations
 
+## 💾 AWS S3 Data Lake
+
+After configuring AWS credentials, the pipeline automatically stores data in S3:
+
+```
+s3://west-africa-economic-data/
+├── raw/
+│   └── world-bank-api/
+│       └── 2026/05/06/121530/
+│           └── data.csv              # Raw extracted data (8 columns)
+└── processed/
+    └── west-africa-economic/
+        └── 2026/05/06/121530/
+            └── data.parquet          # Transformed data (13 columns, compressed)
+```
+
+**Partitioning Strategy**: `YYYY/MM/DD/HHMMSS` enables efficient querying with AWS Athena
+
+**File Formats**:
+- **Raw layer**: CSV (human-readable, fast to parse)
+- **Processed layer**: Parquet (optimized for analytics, 60% smaller than CSV)
+
+**Query Example** (AWS Athena):
+```sql
+SELECT country_name, year, gdp_current_usd, data_quality_flag
+FROM s3_processed_data
+WHERE year = 2020 AND data_quality_flag = 'HIGH';
+```
+
+See [AWS_SETUP.md](AWS_SETUP.md) for S3 Athena setup guide
+
 ## 📁 Project Structure
 
 ```
@@ -302,13 +363,15 @@ DAG Triggered (Manual or Schedule)
     ↓
 [TRANSFORM] Clean, validate, enrich data
     ↓
-[LOAD_TO_POSTGRES] Upsert to PostgreSQL warehouse
-    ├─→ [LOAD_TO_S3] Push to data lake (optional)
+    ├─→ [LOAD_TO_POSTGRES] Upsert to PostgreSQL warehouse  (parallel)
+    ├─→ [LOAD_TO_S3] Push raw + processed data to S3        (parallel)
     ↓
-[VALIDATE_PIPELINE] Assert data integrity
+[VALIDATE_PIPELINE] Assert data integrity (on success)
     ↓
 ✅ SUCCESS (or ↻ RETRY if any task fails)
 ```
+
+**Key Advantage**: Both loaders execute simultaneously, reducing total pipeline duration
 
 ### Retry Logic
 - **Max Retries**: 3 attempts per task
@@ -331,7 +394,9 @@ DAG Triggered (Manual or Schedule)
 | API calls (5 indicators × 10 countries) | ~20s | Parallel requests (threading) |
 | Data transformation | ~200ms | Vectorized Pandas operations |
 | PostgreSQL INSERT | ~500ms | Batch inserts (chunksize=500) |
-| S3 upload (optional) | ~2s | Parquet + gzip compression |
+| S3 upload (Parquet) | ~1s | Parallel with PostgreSQL load |
+
+**Note**: `load_to_postgres` and `load_to_s3` run **in parallel**, reducing end-to-end latency to ~25 seconds
 
 ### Optimization Techniques Implemented
 
@@ -450,10 +515,11 @@ This project is licensed under the MIT License. You are free to use this project
 ## 📸 Screenshots
 
 ### Airflow DAG Graph
-![Airflow DAG Pipeline](dags.png)
-
-### Data Sample
-![Data Sample](image.png)
+![Airflow DAG Pipeline](dag_image.png)
+### Data Lake 
+![Bucket S3](aws_bucket.png)
+### Warehouse Postgres
+![Data Sample](docker_test_image.png)
 
 ---
 
