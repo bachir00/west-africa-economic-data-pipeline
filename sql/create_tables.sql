@@ -1,5 +1,4 @@
-\c west_africa_economic
--- Crée la table principale
+-- -- Crée la table principale
 CREATE TABLE IF NOT EXISTS west_africa_economic_data (
     id                      SERIAL PRIMARY KEY,
     country_code            VARCHAR(3) NOT NULL,
@@ -20,5 +19,3 @@ CREATE TABLE IF NOT EXISTS west_africa_economic_data (
 -- Crée l'index
 CREATE INDEX IF NOT EXISTS idx_country_year 
     ON west_africa_economic_data(country_code, year);
--- Vérifie que la table existe
-\dt

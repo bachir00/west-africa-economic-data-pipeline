@@ -26,7 +26,7 @@ def test_postgres_loader():
     # ─────────────────────────────────────────
     print("\n⏳ Préparation des données...")
     
-    extractor = WorldBankExtractor(start_year=2018, end_year=2020)
+    extractor = WorldBankExtractor(start_year=2019, end_year=2020)
     df_raw = extractor.extract_all()
     
     df_final = (
