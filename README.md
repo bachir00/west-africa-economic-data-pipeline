@@ -14,7 +14,12 @@ A production-grade ETL (Extract, Transform, Load) platform that automates the co
 - [Pipeline Workflows](#pipeline-workflows)
 - [Performance & Optimization](#performance--optimization)
 - [Error Handling & Monitoring](#error-handling--monitoring)
+- [Testing](#testing)
+- [Future Enhancements](#future-enhancements)
 - [Contributing](#contributing)
+- [License](#license)
+- [Author](#author)
+- [Acknowledgments](#acknowledgments)
 
 ## 📊 Overview
 
@@ -425,13 +430,14 @@ Contributions are welcome! Please follow these steps:
 
 ## 📝 License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. You are free to use this project for personal, commercial, or educational purposes.
 
 ## 👨‍💼 Author
 
 **Bachir** - Data Engineer  
-- 🔗 GitHub: [@bachir00](https://github.com/bachir00)
+- 🔗 GitHub: [github.com/bachir00](https://github.com/bachir00)
 - 📧 Email: bassiroukane@esp.sn
+- 💼 LinkedIn: [linkedin.com/in/bachir](https://linkedin.com/in/bachir)
 
 ## 🙏 Acknowledgments
 
@@ -441,5 +447,16 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 ---
 
+## 📸 Screenshots
+
+### Airflow DAG Graph
+![Airflow DAG Pipeline](dags.png)
+
+### Data Sample
+![Data Sample](image.png)
+
+---
+
 **Last Updated**: May 6, 2026  
-**Status**: ✅ Production Ready
+**Status**: ✅ Production Ready  
+**Repository**: [github.com/bachir00/west-africa-economic-data-pipeline](https://github.com/bachir00/west-africa-economic-data-pipeline)
