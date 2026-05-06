@@ -502,7 +502,7 @@ This project is licensed under the MIT License. You are free to use this project
 **Bachir** - Data Engineer  
 - 🔗 GitHub: [github.com/bachir00](https://github.com/bachir00)
 - 📧 Email: bassiroukane@esp.sn
-- 💼 LinkedIn: [linkedin.com/in/bachir](https://linkedin.com/in/bachir)
+- 💼 LinkedIn: [linkedin.com/in/bachir](https://www.linkedin.com/in/bassirou-kane-525529227/)
 
 ## 🙏 Acknowledgments
 
