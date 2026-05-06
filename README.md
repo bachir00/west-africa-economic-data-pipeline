@@ -44,13 +44,13 @@ This project ingests economic data from the **World Bank API** for 10 West Afric
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
 │   EXTRACT    │  │  TRANSFORM   │  │    LOAD      │
 │              │  │              │  │              │
-│ World Bank   │  │ Data          │  │ PostgreSQL   │
-│ API (2-3     │  │ Cleaning &    │  │ (OLAP)       │
-│ years data)  │  │ Validation    │  │              │
-│              │  │ (20 records)  │  │ AWS S3       │
+│ World Bank   │  │ Data         │  │ PostgreSQL   │
+│ API (2-3     │  │ Cleaning &   │  │ (OLAP)       │
+│ years data)  │  │ Validation   │  │              │
+│              │  │ (20 records) │  │ AWS S3       │
 └──────────────┘  └──────────────┘  │ (Data Lake)  │
-                                      │              │
-                                      └──────────────┘
+                                    │              │
+                                    └──────────────┘
                                               │
                                               ▼
                                       ┌──────────────┐
@@ -431,7 +431,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 **Bachir** - Data Engineer  
 - 🔗 GitHub: [@bachir00](https://github.com/bachir00)
-- 📧 Email: contact@bachir.dev
+- 📧 Email: bassiroukane@esp.sn
 
 ## 🙏 Acknowledgments
 
